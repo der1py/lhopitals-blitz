@@ -1,6 +1,6 @@
-import { Entity } from '../entity.js';
-import { CONFIG } from '../game.js';
-import { Obstacle } from './obstacle.js';
+import { Entity } from '../Entity.js';
+import { CONFIG } from '../Game.js';
+import { Obstacle } from './Obstacle.js';
 
 export class scrollingText extends Obstacle {
     constructor(x, y, width, height, text) {

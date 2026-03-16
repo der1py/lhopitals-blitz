@@ -1,4 +1,4 @@
-import { CONFIG } from "./game.js";
+import { CONFIG } from "./Game.js";
 
 export class Renderer {
     constructor(ctx, canvas) {

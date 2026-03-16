@@ -1,11 +1,11 @@
-import { Player } from './entities/player.js';
-import { ObstacleManager } from './obstacleManager.js';
-import { QuizManager } from './quizManager.js';
-import { Renderer } from './renderer.js';
-import { InputHandler } from './inputHandler.js';
-import { EASY_STRUCTURES } from './structures.js'; // for debug; remove later
-import { QUIZ_STRUCTURE } from './structures.js'; // for debug; remove later
-import { scrollingText } from './entities/scrollingText.js';
+import { Player } from './entities/Player.js';
+import { ObstacleManager } from './ObstacleManager.js';
+import { QuizManager } from './QuizManager.js';
+import { Renderer } from './Renderer.js';
+import { InputHandler } from './InputHandler.js';
+import { EASY_STRUCTURES } from './Structures.js'; // for debug; remove later
+import { QUIZ_STRUCTURE } from './Structures.js'; // for debug; remove later
+import { scrollingText } from './entities/ScrollingText.js';
 
 // states
 const GameState = Object.freeze({

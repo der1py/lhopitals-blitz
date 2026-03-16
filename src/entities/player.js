@@ -1,5 +1,5 @@
-import { CONFIG } from '../game.js';
-import { Entity } from '../entity.js';
+import { CONFIG } from '../Game.js';
+import { Entity } from '../Entity.js';
 
 export class Player extends Entity {
     constructor(x, y) {

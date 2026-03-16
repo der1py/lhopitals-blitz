@@ -1,8 +1,8 @@
-import { Obstacle } from './entities/obstacle.js';
-import { CONFIG } from './game.js';
-import { EASY_STRUCTURES } from './structures.js';
-import { HARD_STRUCTURES } from './structures.js';
-import { QUIZ_STRUCTURE } from './structures.js';
+import { Obstacle } from './entities/Obstacle.js';
+import { CONFIG } from './Game.js';
+import { EASY_STRUCTURES } from './Structures.js';
+import { HARD_STRUCTURES } from './Structures.js';
+import { QUIZ_STRUCTURE } from './Structures.js';
 
 export class ObstacleManager {
     constructor() {
