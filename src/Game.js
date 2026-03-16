@@ -5,7 +5,7 @@ import { Renderer } from './Renderer.js';
 import { InputHandler } from './InputHandler.js';
 import { EASY_STRUCTURES } from './Structures.js'; // for debug; remove later
 import { QUIZ_STRUCTURE } from './Structures.js'; // for debug; remove later
-import { scrollingText } from './entities/ScrollingText.js';
+import { ScrollingText } from './entities/ScrollingText.js';
 
 // states
 const GameState = Object.freeze({
@@ -29,13 +29,6 @@ export const CONFIG = {
   laneCount: 4 // todo
 };
 
-export const QUESTION_BANK = [
-  { question: "What is 2+2?", answers: ["3","4","5","22"], correct: 1 },
-  { question: "3*3=?", answers: ["6","9","12","8"], correct: 1 },
-  { question: "Capital of France?", answers: ["Berlin","London","Paris","Rome"], correct: 2 },
-  { question: "Square root of 16?", answers: ["2","4","8","6"], correct: 1 }
-];
-
 export class Game {
   constructor() {
     const canvas = document.getElementById("gameCanvas");
@@ -49,20 +42,20 @@ export class Game {
     // Input and renderer
     this.input = new InputHandler();
     this.renderer = new Renderer(this.ctx, canvas);
-
-    // Placeholder for obstacles (empty for now)
-    // this.obstacles = []; // move to obstacle manager
+    
     this.obstacleManager = new ObstacleManager();
+    this.quizManager = new QuizManager(this.obstacleManager);
 
     // Score & game state
     this.score = 0;
     this.lastTime = 0;
     this.state = GameState.RUNNING;
 
-    // deubug
+    // TODO deubug
     // this.obstacleManager._spawnStructure(EASY_STRUCTURES[0]);
     // this.obstacleManager._spawnStructure(QUIZ_STRUCTURE[0]);
-    this.obstacleManager.obstacles.push(new scrollingText(CONFIG.canvasWidth, 100, 100, 0, "hello world"));
+    // this.obstacleManager.obstacles.push(new ScrollingText(CONFIG.canvasWidth, 100, 100, 0, "hello world"));
+    this.obstacleManager.spawnScrollingText(6, "What is 2+2?", 0);
 
     // Start loop
     requestAnimationFrame(this.loop.bind(this));
@@ -97,7 +90,7 @@ export class Game {
     }
 
     if (this.input.isKeyPressed("2")) {
-        this.obstacleManager._spawnStructure(EASY_STRUCTURES[1]);
+        this.obstacleManager.spawnStructure(EASY_STRUCTURES[1]);
     }
 
     if (this.input.isKeyPressed("3")) {
@@ -161,17 +154,31 @@ export class Game {
         }
     });
 
-    // spawn new structures as needed
-    if (this.state == GameState.RUNNING) this.obstacleManager.spawnNewStructure();
+    // update based on state
+    if (this.state == GameState.RUNNING) {
+      // spawn new structures as needed
+      if (this.obstacleManager.spawnsSinceLastQuiz >= 3) {
+        this.state = GameState.QUIZ;
+        this.obstacleManager.spawnsSinceLastQuiz = 0;
+        this.quizManager.init();
+      } else {
+        this.obstacleManager.spawnNewStructure();
+      }
+
+    } else if (this.state == GameState.QUIZ) {
+      // quiz logic
+      this.quizManager.update();
+      if (!this.quizManager.active) this.state = GameState.RUNNING;
+    }
 
     // Endless runner scoring (could increment over time)
     this.score += 0.01 * deltaTime; // simple score per time
     const distance = CONFIG.scrollSpeed * (deltaTime / 1000);
+
   }
 
   // render everything
   draw(deltaTime) {
-    console.log(this.state);
     switch (this.state) {
       case GameState.QUIZ:
       case GameState.RUNNING:
