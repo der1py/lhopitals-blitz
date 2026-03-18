@@ -16,6 +16,8 @@ export class QuizManager {
         this.available = [];
     }
 
+
+    // reset quiz stuff
     init() {
         this.active = true;
         this.state = QuizState.INTRO;
@@ -24,6 +26,7 @@ export class QuizManager {
         this.obstacleManager.spawnScrollingText(6, this.q.text, 0);
     }
 
+    // main update loop
     update() {
         if (!this.active) return;
         if (this.state === QuizState.INTRO && this.obstacleManager.obstacles.length === 0) {
@@ -33,6 +36,7 @@ export class QuizManager {
         }
     }
 
+    // transitions from question to the actual quiz event
     startQuiz() {
         this.state = QuizState.QUIZ;
         this.obstacleManager.spawnStructure(QUIZ_STRUCTURE[this.correctLane]);
@@ -54,6 +58,7 @@ export class QuizManager {
         }
     }
 
+    // returns the next question from bank
     nextQuestion() {
         this.available = QUESTION_BANK.filter(q => 
             !this.completedQuestions.includes(q)

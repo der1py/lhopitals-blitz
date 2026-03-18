@@ -51,10 +51,6 @@ export class Renderer {
         }
     }
 
-    drawQuiz(quiz) {
-        // Currently empty - quiz display logic goes here later
-    }
-
     drawScore(score) {
         this.ctx.fillStyle = "black";
         this.ctx.font = "20px Arial";

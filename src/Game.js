@@ -4,8 +4,6 @@ import { QuizManager } from './QuizManager.js';
 import { Renderer } from './Renderer.js';
 import { InputHandler } from './InputHandler.js';
 import { EASY_STRUCTURES } from './Structures.js'; // for debug; remove later
-import { QUIZ_STRUCTURE } from './Structures.js'; // for debug; remove later
-import { ScrollingText } from './entities/ScrollingText.js';
 
 // states
 const GameState = Object.freeze({
@@ -51,12 +49,6 @@ export class Game {
     this.lastTime = 0;
     this.state = GameState.RUNNING;
 
-    // TODO deubug
-    // this.obstacleManager._spawnStructure(EASY_STRUCTURES[0]);
-    // this.obstacleManager._spawnStructure(QUIZ_STRUCTURE[0]);
-    // this.obstacleManager.obstacles.push(new ScrollingText(CONFIG.canvasWidth, 100, 100, 0, "hello world"));
-    this.obstacleManager.spawnScrollingText(6, "What is 2+2?", 0);
-
     // Start loop
     requestAnimationFrame(this.loop.bind(this));
   }
@@ -84,15 +76,7 @@ export class Game {
         this.player.jump();
     }
 
-    // temp shortcuts
-    if (this.input.isKeyPressed("1") || this.input.isKeyPressed("ArrowUp")) {
-        this.obstacleManager.spawnObstacle(10, "spike");
-    }
-
-    if (this.input.isKeyPressed("2")) {
-        this.obstacleManager.spawnStructure(EASY_STRUCTURES[1]);
-    }
-
+    // TODO debug
     if (this.input.isKeyPressed("3")) {
         console.log(this.obstacleManager.obstacles);
     }
@@ -171,6 +155,7 @@ export class Game {
       if (!this.quizManager.active) this.state = GameState.RUNNING;
     }
 
+    // TODO fix scoring
     // Endless runner scoring (could increment over time)
     this.score += 0.01 * deltaTime; // simple score per time
     const distance = CONFIG.scrollSpeed * (deltaTime / 1000);
