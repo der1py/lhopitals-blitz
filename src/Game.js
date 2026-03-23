@@ -3,6 +3,7 @@ import { ObstacleManager } from './ObstacleManager.js';
 import { QuizManager } from './QuizManager.js';
 import { Renderer } from './Renderer.js';
 import { InputHandler } from './InputHandler.js';
+import { ParticleManager } from './ParticleManager.js';
 import { EASY_STRUCTURES } from './Structures.js'; // for debug; remove later
 
 // states
@@ -43,6 +44,7 @@ export class Game {
     
     this.obstacleManager = new ObstacleManager();
     this.quizManager = new QuizManager(this.obstacleManager);
+    this.particleManager = new ParticleManager();
 
     // Score & game state
     this.score = 0;
@@ -93,7 +95,7 @@ export class Game {
             case 'text':
               break;
             default:
-              this.state = GameState.GAME_OVER;
+              this.gameOver();
               break;
           }
 
@@ -121,7 +123,7 @@ export class Game {
               }
               break;
             case 'spike':
-              this.state = GameState.GAME_OVER;
+              this.gameOver();
               break;
             case 'slime':
               if (this.player.vy < 0) {
@@ -162,25 +164,35 @@ export class Game {
 
   }
 
-  // render everything
+  // render everything  
   draw(deltaTime) {
+    this.renderer.clear();
+
     switch (this.state) {
-      case GameState.QUIZ:
       case GameState.RUNNING:
-        this.renderer.clear();
+      case GameState.QUIZ:
         this.renderer.drawPlayer(this.player, deltaTime);
-        this.obstacleManager.obstacles.forEach(obstacle => this.renderer.drawObstacle(obstacle));
-        this.renderer.drawScore(Math.floor(this.score));
         break;
       case GameState.GAME_OVER:
         this.ctx.fillStyle = "black";
         this.ctx.font = "40px Arial";
         this.ctx.fillText(
-          "Game Over!",
+          "Game Over!", 
           CONFIG.canvasWidth / 2 - 100,
           CONFIG.canvasHeight / 2
         );
     }
+
+    this.obstacleManager.obstacles.forEach(obstacle => this.renderer.drawObstacle(obstacle));
+    this.renderer.drawScore(Math.floor(this.score));
+    this.particleManager.update(deltaTime); // particles are purely visual so update in draw
+    this.renderer.drawParticles(this.particleManager.particles);
+  }
+
+  gameOver() {
+    if (this.state == GameState.GAME_OVER) return;
+    this.particleManager.spawnParticles(this.player.x, this.player.y, 80);
+    this.state = GameState.GAME_OVER;
   }
 
 }

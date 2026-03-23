@@ -1,6 +1,8 @@
 import { CONFIG } from "./Game.js";
 
 export class Renderer {
+
+    // TODO maybe cleanup and encapsulate draw methods within classes
     constructor(ctx, canvas) {
         this.ctx = ctx;
         this.canvas = canvas;
@@ -33,7 +35,7 @@ export class Renderer {
         this.ctx.rotate(player.spriteRotation);
 
         // draw sprite centered
-        this.ctx.fillStyle = "cyan";
+        this.ctx.fillStyle = 'cyan';
         // this.ctx.fillRect(player.x, player.y, player.width, player.height);
         this.ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
 
@@ -47,8 +49,15 @@ export class Renderer {
             this.ctx.fillText(obstacle.text, obstacle.x, obstacle.y + 20);
         } else {
             this.ctx.fillStyle = obstacle.color;
-            this.ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            this.ctx.fillRect(Math.round(obstacle.x), Math.round(obstacle.y), obstacle.width, obstacle.height);
         }
+    }
+
+    drawParticles(particles) {
+        particles.forEach(p => {
+            this.ctx.fillStyle = `rgba(${p.color.r},${p.color.g},${p.color.b},${p.life/60})`;
+            this.ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+        });
     }
 
     drawScore(score) {

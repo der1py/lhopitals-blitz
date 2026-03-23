@@ -19,6 +19,7 @@ export class Player extends Entity {
         // Sprite
         this.spriteRotation = 0;
         this.spriteRotationSpeed = CONFIG.scrollSpeed * (Math.PI / 180) * 3;
+        this.color = {r: 0, g: 255, b: 255};
     }
 
     jump() {
