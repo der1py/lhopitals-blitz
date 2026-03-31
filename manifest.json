@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "L'Hôpital's Blitz",
+  "version": "1.0",
+  "description": "Side-scrolling runner to get good at calculus",
+  "action": {
+    "default_popup": "index.html",
+    "default_title": "L'Hôpital's Blitz"
+  },
+  "icons": {
+    "128": "icon.png"
+  }
+}

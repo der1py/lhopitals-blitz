@@ -1,3 +1,5 @@
+// main game file
+
 import { Player } from './entities/Player.js';
 import { ObstacleManager } from './ObstacleManager.js';
 import { QuizManager } from './QuizManager.js';
@@ -12,6 +14,11 @@ const GameState = Object.freeze({
   QUIZ: 'QUIZ',
   GAME_OVER: 'GAME_OVER',
   MENU: 'MENU'
+});
+
+const GameMode = Object.freeze({
+  LEVEL: 'LEVEL',
+  ENDLESS: 'ENDLESS'
 });
 
 // the ones with todo dont actually do anything lol
@@ -30,17 +37,25 @@ export const CONFIG = {
 
 export class Game {
   constructor() {
-    const canvas = document.getElementById("gameCanvas");
-    this.ctx = canvas.getContext("2d");
-    canvas.width = CONFIG.canvasWidth;
-    canvas.height = CONFIG.canvasHeight;
+    this.canvas = document.getElementById("gameCanvas");
+    this.ctx = this.canvas.getContext("2d");
+    this.canvas.width = CONFIG.canvasWidth;
+    this.canvas.height = CONFIG.canvasHeight;
 
+    this.lastTime = 0;
+    this.reset();
+
+    // Start loop
+    requestAnimationFrame(this.loop.bind(this));
+  }
+
+  reset() {
     // Player setup
     this.player = new Player(3 * CONFIG.blockSize, 10 * CONFIG.blockSize);
 
     // Input and renderer
     this.input = new InputHandler();
-    this.renderer = new Renderer(this.ctx, canvas);
+    this.renderer = new Renderer(this.ctx, this.canvas);
     
     this.obstacleManager = new ObstacleManager();
     this.quizManager = new QuizManager(this.obstacleManager);
@@ -48,30 +63,54 @@ export class Game {
 
     // Score & game state
     this.score = 0;
-    this.lastTime = 0;
     this.state = GameState.RUNNING;
-
-    // Start loop
-    requestAnimationFrame(this.loop.bind(this));
   }
 
   loop(timestamp) {
     const deltaTime = timestamp - this.lastTime;
     this.lastTime = timestamp;
 
-    switch (this.state) {
-      case GameState.QUIZ:
-      case GameState.RUNNING:
-        this.update(deltaTime);
-        break;
-    }
-
+    // switch (this.state) {
+    //   case GameState.QUIZ:
+    //   case GameState.RUNNING:
+    //     this.update(deltaTime);
+    //     break;
+    // }
+    this.update(deltaTime);
     this.draw(deltaTime);
     requestAnimationFrame(this.loop.bind(this));
   }
 
   // update the main gameplaying state
   update(deltaTime) {
+
+    this.updateCSS();
+
+    if (this.input.isKeyPressed("m")) {
+      this.state = GameState.MENU;
+      // window.location.href = 'test.html'
+    }
+
+
+    switch (this.state) {
+      case GameState.MENU:
+        this.toggleMenu(true, "main-menu");
+        this.toggleGame(false);
+        return;
+      case GameState.QUIZ:
+      case GameState.RUNNING:
+        break;
+      case GameState.GAME_OVER:
+        if (this.particleManager.particles.length == 0) {
+          this.reset();
+        }
+        return;
+      default:
+        return;
+    }
+
+    this.toggleMenu(false);
+    this.toggleGame(true);
 
     // handle input
     if (this.input.isKeyPressed(" ") || this.input.isKeyPressed("ArrowUp") || this.input.isMousePressed()) {
@@ -83,6 +122,98 @@ export class Game {
         console.log(this.obstacleManager.obstacles);
     }
     
+    this.moveAndCollide(deltaTime);
+
+    // update based on state
+    if (this.state == GameState.RUNNING) {
+      // spawn new structures as needed
+      if (this.obstacleManager.spawnsSinceLastQuiz >= 3) {
+        this.state = GameState.QUIZ;
+        this.obstacleManager.spawnsSinceLastQuiz = 0;
+        this.quizManager.init();
+      } else {
+        this.obstacleManager.spawnNewStructure();
+      }
+
+    } else if (this.state == GameState.QUIZ) {
+      // quiz logic
+      this.quizManager.update();
+      if (!this.quizManager.active) this.state = GameState.RUNNING;
+    }
+
+    // TODO fix scoring
+    // Endless runner scoring (could increment over time)
+    this.score += 0.01 * deltaTime; // simple score per time
+    const distance = CONFIG.scrollSpeed * (deltaTime / 1000); // TODO this bs
+
+  }
+
+  // render everything, only canvas stuff should be here; menus handeled separately
+  draw(deltaTime) {
+    this.renderer.clear();
+
+    switch (this.state) {
+      case GameState.RUNNING:
+      case GameState.QUIZ:
+        this.renderer.drawPlayer(this.player, deltaTime);
+        break;
+      case GameState.GAME_OVER:
+        // this.ctx.fillStyle = "black";
+        // this.ctx.font = "40px Arial";
+        // this.ctx.fillText(
+        //   "Game Over!", 
+        //   CONFIG.canvasWidth / 2 - 100,
+        //   CONFIG.canvasHeight / 2
+        // );
+    }
+
+    this.obstacleManager.obstacles.forEach(obstacle => this.renderer.drawObstacle(obstacle));
+    this.renderer.drawScore(Math.floor(this.score));
+    this.particleManager.update(deltaTime); // particles are purely visual so update in draw
+    this.renderer.drawParticles(this.particleManager.particles);
+  }
+
+  gameOver() {
+    if (this.state == GameState.GAME_OVER) return;
+    this.particleManager.spawnParticles(this.player.x, this.player.y, 80);
+    this.state = GameState.GAME_OVER;
+  }
+
+  // show/hide menus
+  // default is all menu elements, but can specify a class to only toggle one menu
+  toggleMenu(show, menu = "all") {
+    
+    if (menu == "all") {
+      document.querySelectorAll(`.menu`).forEach(el => {
+        el.classList.toggle("hidden", !show);
+      });
+    } else if (document.getElementById(menu)) {
+      document.getElementById(menu).classList.toggle("hidden", !show);
+    } else {
+      console.warn(`Menu with id ${menu} not found`);
+    }
+  }
+
+  toggleGame(show) {
+    document.getElementById("gameCanvas").classList.toggle("hidden", !show);
+  }
+
+  updateCSS() {
+    return;
+    switch (this.state) {
+      case GameState.MENU:
+        document.getElementById("gameStyle").disabled = true;
+        document.getElementById("menuStyle").disabled = false;
+        break;
+      default:
+        document.getElementById("gameStyle").disabled = false;
+        document.getElementById("menuStyle").disabled = true;
+    }
+  }
+
+
+  // handles all movement and collision logic
+  moveAndCollide(deltaTime) {
     // axis separation: handle x and y logic separately
 
     // update x movement
@@ -116,7 +247,6 @@ export class Game {
                 this.player.vy *= -0.2;
               } else {
                 this.player.vy = 0; // ensure no downward velocity before player is able to jump
-                // TODO add sm similar for slime
                 this.player.isOnGround = true;
                 this.player.y = obstacle.y - this.player.height;
                 this.player.groundBlock = obstacle;
@@ -133,66 +263,12 @@ export class Game {
                 this.player.y = obstacle.y - this.player.height;
                 this.player.groundBlock = obstacle;
               }
-              this.player.vy *= -0.5;
+              this.player.vy *= -0.5; // bouncy
               break;
             default:
           }
         }
     });
-
-    // update based on state
-    if (this.state == GameState.RUNNING) {
-      // spawn new structures as needed
-      if (this.obstacleManager.spawnsSinceLastQuiz >= 3) {
-        this.state = GameState.QUIZ;
-        this.obstacleManager.spawnsSinceLastQuiz = 0;
-        this.quizManager.init();
-      } else {
-        this.obstacleManager.spawnNewStructure();
-      }
-
-    } else if (this.state == GameState.QUIZ) {
-      // quiz logic
-      this.quizManager.update();
-      if (!this.quizManager.active) this.state = GameState.RUNNING;
-    }
-
-    // TODO fix scoring
-    // Endless runner scoring (could increment over time)
-    this.score += 0.01 * deltaTime; // simple score per time
-    const distance = CONFIG.scrollSpeed * (deltaTime / 1000);
-
-  }
-
-  // render everything  
-  draw(deltaTime) {
-    this.renderer.clear();
-
-    switch (this.state) {
-      case GameState.RUNNING:
-      case GameState.QUIZ:
-        this.renderer.drawPlayer(this.player, deltaTime);
-        break;
-      case GameState.GAME_OVER:
-        this.ctx.fillStyle = "black";
-        this.ctx.font = "40px Arial";
-        this.ctx.fillText(
-          "Game Over!", 
-          CONFIG.canvasWidth / 2 - 100,
-          CONFIG.canvasHeight / 2
-        );
-    }
-
-    this.obstacleManager.obstacles.forEach(obstacle => this.renderer.drawObstacle(obstacle));
-    this.renderer.drawScore(Math.floor(this.score));
-    this.particleManager.update(deltaTime); // particles are purely visual so update in draw
-    this.renderer.drawParticles(this.particleManager.particles);
-  }
-
-  gameOver() {
-    if (this.state == GameState.GAME_OVER) return;
-    this.particleManager.spawnParticles(this.player.x, this.player.y, 80);
-    this.state = GameState.GAME_OVER;
   }
 
 }

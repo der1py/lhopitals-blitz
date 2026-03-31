@@ -1,23 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- custom stuff -->
   <meta charset="UTF-8">
   <title>boxel rebound</title>
-  <style>
-    canvas { 
-      border: 2px solid black; 
-      display: block; 
-      margin: 0 auto; 
-      background-color: #eef;
-    }
-    body { 
-      text-align: center; 
-      font-family: Arial, sans-serif;
-    }
-  </style>
+  <link rel="stylesheet" href="css/game.css" id="gameStyle">
+
+  <!-- generated styling -->
+  <link rel="stylesheet" href="css/menu.css" id="menuStyle">
+   
 </head>
 <body>
-  <h1>boxel rebound</h1>
+  <main-menu class="menu" id="main-menu"></main-menu>
   <canvas id="gameCanvas" width="800" height="400"></canvas>
   <script type="module" src="./src/script.js"></script>
 </body>

@@ -12,7 +12,6 @@ export class ParticleManager {
 
         // remove old particles
         this.particles = this.particles.filter(p => p.active);
-        console.log(this.particles);
     }
 
     spawnParticles(x, y, n = 30, color = {r:0, g:255, b:255}) {

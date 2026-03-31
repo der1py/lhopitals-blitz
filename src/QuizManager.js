@@ -16,7 +16,6 @@ export class QuizManager {
         this.available = [];
     }
 
-
     // reset quiz stuff
     init() {
         this.active = true;
