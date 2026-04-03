@@ -13,7 +13,8 @@ const GameState = Object.freeze({
   RUNNING: 'RUNNING',
   QUIZ: 'QUIZ',
   GAME_OVER: 'GAME_OVER',
-  MENU: 'MENU'
+  MENU: 'MENU',
+  PAUSED: 'PAUSED',
 });
 
 const GameMode = Object.freeze({
@@ -43,11 +44,34 @@ export class Game {
     this.canvas.height = CONFIG.canvasHeight;
 
     this.lastTime = 0;
+
+    this.setupUI();
+
     this.reset();
     this.state = GameState.MENU;
 
     // Start loop
     requestAnimationFrame(this.loop.bind(this));
+  }
+
+  setupUI() {
+    // DOM references
+    this.pauseOverlay = document.getElementById("pauseOverlay");
+    this.resumeButton = document.getElementById("resumeButton");
+    this.quitButton = document.getElementById("quitButton");
+
+    // Resume button
+    this.resumeButton.addEventListener("click", () => {
+      this.unpause();
+    });
+
+    // Quit button
+    this.quitButton.addEventListener("click", () => {
+      this.state = GameState.MENU;   // switch to menu
+      this.toggleMenu(true, "main-menu");
+      this.toggleGame(false);
+      this.pauseOverlay.classList.add("hidden");
+    });
   }
 
   reset() {
@@ -84,6 +108,8 @@ export class Game {
 
   // update the main gameplaying state
   update(deltaTime) {
+    console.log(this.pauseOverlay.classList);
+    if (this.state === GameState.PAUSED) return;
 
     this.updateCSS();
 
@@ -196,9 +222,31 @@ export class Game {
   }
 
   toggleGame(show) {
-    document.getElementById("gameCanvas").classList.toggle("hidden", !show);
+    document.querySelectorAll(`.gameElement`).forEach(el => {
+        el.classList.toggle("hidden", !show);
+    });
+    // show/hide pause overlay
+    if (this.state == GameState.PAUSED) {
+      this.pauseOverlay.classList.remove("hidden");
+    } else {
+      this.pauseOverlay.classList.add("hidden");
+    }
   }
 
+  pause() {
+    if (this.state !== GameState.RUNNING) return;
+
+    this.state = GameState.PAUSED;
+    this.score -= 10; // apply penalty immediately
+    this.pauseOverlay.classList.remove("hidden");
+  }
+
+  unpause() {
+    this.state = GameState.RUNNING;
+    this.pauseOverlay.classList.add("hidden");
+  }
+
+  // make it only call on state change to be slightly more efficient maybe
   updateCSS() {
     switch (this.state) {
       case GameState.MENU:

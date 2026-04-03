@@ -13,7 +13,17 @@
 </head>
 <body>
   <main-menu class="menu" id="main-menu"></main-menu>
-  <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <canvas id="gameCanvas" width="800" height="400" class="gameElement"></canvas>
+  <button id="menuButton" class="gameElement">☰</button>
+  <div id="pauseOverlay" class="hidden gameElement">
+    <h2>Paused</h2>
+    <p>−10 points penalty</p>
+    <div class="pause-buttons">
+      <button id="resumeButton">Resume</button>
+      <button id="quitButton">Quit to Menu</button>
+    </div>
+  </div>
+
   <script type="module" src="./src/script.js"></script>
 </body>
 </html>

@@ -33,8 +33,8 @@ export class ObstacleManager {
             // increment counter here so quiz spawn doesnt affect it
             this.spawnsSinceLastQuiz++;
             this.totalSpawns++;
-            console.log(this.spawnsSinceLastQuiz);
-            console.log(this.totalSpawns);
+            // console.log(this.spawnsSinceLastQuiz);
+            // console.log(this.totalSpawns);
         }
     }
 
