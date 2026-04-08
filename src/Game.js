@@ -7,7 +7,9 @@ import { Renderer } from './Renderer.js';
 import { InputHandler } from './InputHandler.js';
 import { ParticleManager } from './ParticleManager.js';
 import { QUESTION_BANK } from './QuestionBank.js';
-import { EASY_STRUCTURES } from './Structures.js'; // for debug; remove later
+import { TUTORIAL_STRUCTURES } from './Structures.js';
+import { EASY_STRUCTURES } from './Structures.js';
+import { HARD_STRUCTURES } from './Structures.js';
 
 // states
 const GameState = Object.freeze({
@@ -31,7 +33,8 @@ export const CONFIG = {
   canvasWidth: 20 * BLOCK_SIZE,
   canvasHeight: 12 * BLOCK_SIZE,
   scrollSpeed: 240, // used for obsracle movement and quiz text speed; in pixels per second
-  difficulty: 1 // 0 is ez, 1 is normal, 2 is hard
+  difficulty: 1, // 0 is ez, 1 is normal, 2 is hard
+  tutorial: false
 };
 
 export class Game {
@@ -95,7 +98,8 @@ export class Game {
     this.input = new InputHandler();
     this.renderer = new Renderer(this.ctx, this.canvas);
     
-    this.obstacleManager = new ObstacleManager(EASY_STRUCTURES);
+    this.loadStructures();
+
     this.quizManager = new QuizManager(this.obstacleManager, this.questionSet);
     this.particleManager = new ParticleManager();
     this.completedQuestions = 0;
@@ -107,6 +111,42 @@ export class Game {
 
     this.goalCooldown = 0; // time remaining (ms)
     this.maxGoalCooldown = 2000; // 2 seconds
+
+    this.obstacleManager.spawnStructure(TUTORIAL_STRUCTURES[1]); 
+  }
+
+  loadStructures() {
+
+    if (CONFIG.tutorial) {
+      this.obstacleManager = new ObstacleManager(TUTORIAL_STRUCTURES);
+      return;
+    }
+
+    let STRUCTURES = [];
+
+    switch(CONFIG.difficulty) {
+      case 0:
+        STRUCTURES = [
+          ...EASY_STRUCTURES
+        ];
+        break;
+      case 1:
+        STRUCTURES = [
+          ...EASY_STRUCTURES,
+          ...HARD_STRUCTURES  // 1x weight
+        ];
+        break;
+      case 2:
+        STRUCTURES = [
+          ...HARD_STRUCTURES
+        ];
+        break;
+      default:
+        console.warn("invalid difficulty selected");
+    }
+    console.log(STRUCTURES);
+
+    this.obstacleManager = new ObstacleManager(STRUCTURES);
   }
 
   loop(timestamp) {
@@ -210,15 +250,7 @@ export class Game {
       case GameState.QUIZ:
       case GameState.PAUSED:
         this.renderer.drawPlayer(this.player, deltaTime);
-        if (this.player.isOnGround) {
-          this.particleManager.spawnGroundParticles(
-            this.player.x, 
-            this.player.y + this.player.height / 2, 
-            Math.max(1, 10 - this.particleManager.particles.length), 
-            {r:0, g:255, b:255},
-            -5, -2
-          );
-        }
+        this.handleGroundParticles();
         break;
       case GameState.GAME_OVER:
         // this.ctx.fillStyle = "black";
@@ -235,6 +267,18 @@ export class Game {
     this.renderer.drawQuizProgress(this.completedQuestions, this.totalQuestions);
     this.particleManager.update(deltaTime); // particles are purely visual so update in draw
     this.renderer.drawParticles(this.particleManager.particles);
+  }
+
+  handleGroundParticles() {
+    if (this.player.isOnGround) {
+          this.particleManager.spawnGroundParticles(
+            this.player.x, 
+            this.player.y + this.player.height / 2, 
+            Math.max(1, 10 - this.particleManager.particles.length), 
+            {r:0, g:255, b:255},
+            -5, -2
+          );
+    }
   }
 
   gameOver() {
@@ -390,11 +434,25 @@ export class Game {
                 this.player.groundBlock = obstacle;
               }
               this.player.vy *= -0.5; // bouncy
+              for (let i = 0; i < 30; i++) {
+                this.particleManager.spawnGroundParticles(
+                  this.player.x, 
+                  this.player.y + this.player.height / 2, 
+                  Math.max(1, 10 - this.particleManager.particles.length), 
+                  {r:100, g:255, b:100},
+                  -5, -2
+                );
+              }
+              this.player.jump();
               break;
             default:
           }
         }
     });
+  }
+
+  setConfig(key, val) {
+    CONFIG[key] = val;
   }
 
 }
