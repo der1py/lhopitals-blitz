@@ -1,66 +1,79 @@
-import { EASY_STRUCTURES } from "../src/Structures.js";
-
 const canvas = document.getElementById("editorCanvas");
 const ctx = canvas.getContext("2d");
 
 const CELL_SIZE = 30;
+const GRID_WIDTH = 40;
+const GRID_HEIGHT = 12;
 
-let structure = EASY_STRUCTURES[0];
+// fixed canvas size
+canvas.width = GRID_WIDTH * CELL_SIZE;
+canvas.height = GRID_HEIGHT * CELL_SIZE;
 
-// set canvas size
-canvas.width = 40 * CELL_SIZE;
-canvas.height = 12 * CELL_SIZE;
+// create empty grid
+function createEmptyStructure(width, height) {
+  return Array.from({ length: width }, () =>
+    Array(height).fill(0)
+  );
+}
+
+let structure = createEmptyStructure(GRID_WIDTH, GRID_HEIGHT);
 
 let selectedType = 1;
 let selectedTile = null;
 let isMouseDown = false;
 
-// palette selection
+// palette
 document.querySelectorAll("#palette button").forEach(btn => {
   btn.addEventListener("click", () => {
     selectedType = Number(btn.dataset.type);
   });
 });
 
-// 🔑 unified paint function
+// paint
 function paintTile(e) {
   const rect = canvas.getBoundingClientRect();
 
   const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
   const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
 
-  if (!structure[x] || structure[x][y] === undefined) return;
+  if (
+    x < 0 || y < 0 ||
+    x >= GRID_WIDTH || y >= GRID_HEIGHT
+  ) return;
+
+  if (structure[x][y] === selectedType) return;
 
   structure[x][y] = selectedType;
   selectedTile = { x, y };
 }
 
-// 🖱 mouse events
+// mouse
 canvas.addEventListener("mousedown", (e) => {
   e.preventDefault();
   isMouseDown = true;
   paintTile(e);
 });
 
-canvas.addEventListener("mouseup", () => {
-  isMouseDown = false;
-});
-
-canvas.addEventListener("mouseleave", () => {
-  isMouseDown = false;
-});
+canvas.addEventListener("mouseup", () => isMouseDown = false);
+canvas.addEventListener("mouseleave", () => isMouseDown = false);
 
 canvas.addEventListener("mousemove", (e) => {
-  if (!isMouseDown) return;
-  paintTile(e);
+  const rect = canvas.getBoundingClientRect();
+
+  const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+  const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+
+  selectedTile = { x, y };
+
+  if (isMouseDown) paintTile(e);
 });
 
-// 🎨 render loop
+// draw
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  for (let x = 0; x < structure.length; x++) {
-    for (let y = 0; y < structure[x].length; y++) {
+  for (let x = 0; x < GRID_WIDTH; x++) {
+    for (let y = 0; y < GRID_HEIGHT; y++) {
 
       const type = structure[x][y];
 
@@ -79,7 +92,6 @@ function draw() {
         CELL_SIZE
       );
 
-      // thinner grid
       ctx.lineWidth = 1;
       ctx.strokeStyle = "#333";
       ctx.strokeRect(
@@ -91,7 +103,6 @@ function draw() {
     }
   }
 
-  // highlight selected tile
   if (selectedTile) {
     ctx.strokeStyle = "cyan";
     ctx.lineWidth = 2;
@@ -108,27 +119,78 @@ function draw() {
 
 draw();
 
-// 🧹 clear
+// clear
 document.getElementById("clearBtn").addEventListener("click", () => {
-  for (let x = 0; x < structure.length; x++) {
-    for (let y = 0; y < structure[x].length; y++) {
-      structure[x][y] = 0;
-    }
-  }
+    const confirmed = confirm("Are you sure you want to clear the entire level?");
+    if (!confirmed) return;
+    structure = createEmptyStructure(GRID_WIDTH, GRID_HEIGHT);
 });
 
-// 📤 export
+// export (trim empty space)
+function trimStructure(grid) {
+  let minX = GRID_WIDTH, maxX = -1;
+  let maxY = -1; // only track bottom
+
+  // find bounds
+  for (let x = 0; x < GRID_WIDTH; x++) {
+    for (let y = 0; y < GRID_HEIGHT; y++) {
+      if (grid[x][y] !== 0) {
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+  }
+
+  // all empty
+  if (maxX === -1) return [[0]];
+
+  const trimmed = [];
+
+  for (let x = minX; x <= maxX; x++) {
+    const col = [];
+    for (let y = 0; y <= maxY; y++) { // 👈 keep top air
+      col.push(grid[x][y]);
+    }
+    trimmed.push(col);
+  }
+
+  return trimmed;
+}
+
 document.getElementById("exportBtn").addEventListener("click", () => {
-    //   const data = JSON.stringify(structure);
-    const formatted = "[\n" +
-        structure.map(col => "  " + JSON.stringify(col)).join(",\n") +
-        "\n]";
+  const trimmed = trimStructure(structure);
+
+  const formatted = "[\n" +
+    trimmed.map(col => "  " + JSON.stringify(col)).join(",\n") +
+    "\n]";
+
   navigator.clipboard.writeText(formatted)
     .then(() => alert("Copied to clipboard!"))
     .catch(() => alert("Failed to copy"));
 });
 
-// 📥 import
+// import (normalize to grid size)
+function normalizeStructure(parsed) {
+  const newGrid = createEmptyStructure(GRID_WIDTH, GRID_HEIGHT);
+
+  for (let x = 0; x < Math.min(parsed.length, GRID_WIDTH); x++) {
+    for (let y = 0; y < Math.min(parsed[x].length, GRID_HEIGHT); y++) {
+
+      let val = parsed[x][y];
+
+      // sanitize invalid values
+      if (typeof val !== "number" || val < 0 || val > 4) {
+        val = 0;
+      }
+
+      newGrid[x][y] = val;
+    }
+  }
+
+  return newGrid;
+}
+
 document.getElementById("importBtn").addEventListener("click", () => {
   const input = prompt("Paste your structure JSON here:");
 
@@ -137,18 +199,39 @@ document.getElementById("importBtn").addEventListener("click", () => {
   try {
     const parsed = JSON.parse(input);
 
-    // basic validation (must be 2D array)
     if (!Array.isArray(parsed) || !Array.isArray(parsed[0])) {
       alert("Invalid structure format!");
       return;
     }
 
-    structure = parsed;
-
-
+    structure = normalizeStructure(parsed);
     selectedTile = null;
 
-  } catch (err) {
+  } catch {
     alert("Invalid JSON!");
+  }
+});
+
+
+const paletteButtons = document.querySelectorAll("#palette button");
+
+// update buttons on click
+paletteButtons.forEach(btn => {
+  btn.addEventListener("click", () => {
+    selectedType = Number(btn.dataset.type);
+
+    // remove highlight from all
+    paletteButtons.forEach(b => b.classList.remove("selected"));
+
+    // add highlight to clicked one
+    btn.classList.add("selected");
+  });
+});
+
+
+// update button on load
+paletteButtons.forEach(btn => {
+  if (Number(btn.dataset.type) === selectedType) {
+    btn.classList.add("selected");
   }
 });
