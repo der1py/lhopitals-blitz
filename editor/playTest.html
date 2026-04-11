@@ -1,17 +1,40 @@
-<canvas id="gameCanvas"></canvas>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Canvas</title>
+    <style>
+        canvas { 
+            /* border: 2px solid black;  */
+            display: block; 
+            margin: 0 auto; 
+            background-color: rgb(167, 167, 255);
+        }
 
-<script type="module">
-  import { Game } from "../src/Game.js";
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* centers horizontally */
+            gap: 12px; /* space between canvas and button */
+            margin-top: 20px;
+        }
 
-  // optional override BEFORE construction
-  import { CONFIG } from "../src/Game.js";
+        #openEditorBtn {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
 
-  CONFIG.tutorial = false;
-  CONFIG.difficulty = 0;
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <button id="openEditorBtn">Open Editor</button>
+    </div>
 
-  const game = new Game();
-
-  // inject custom level (if you add hook below)
-//   game.forceSingleLevel(EASY_STRUCTURES[0]);
-  game.reset();
-</script>
+    <script src="playTest.js" type="module"></script>
+    
+</body>
+</html>

@@ -1,3 +1,7 @@
+document.getElementById("testLevelBtn").addEventListener("click", () => {
+  window.open("playTest.html", "_blank");
+});
+
 const canvas = document.getElementById("editorCanvas");
 const ctx = canvas.getContext("2d");
 
@@ -16,7 +20,10 @@ function createEmptyStructure(width, height) {
   );
 }
 
-let structure = createEmptyStructure(GRID_WIDTH, GRID_HEIGHT);
+let structure = 
+localStorage.getItem("playtestStructure")
+  ? normalizeStructure(localStorage.getItem("playtestStructure"))
+  : createEmptyStructure(GRID_WIDTH, GRID_HEIGHT);
 
 let selectedType = 1;
 let selectedTile = null;
@@ -45,6 +52,8 @@ function paintTile(e) {
 
   structure[x][y] = selectedType;
   selectedTile = { x, y };
+
+  saveStructure();
 }
 
 // mouse
@@ -68,8 +77,8 @@ canvas.addEventListener("mousemove", (e) => {
   if (isMouseDown) paintTile(e);
 });
 
-// draw
-function draw() {
+// editor loop, including draawing + other continuous updates
+function loop() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   for (let x = 0; x < GRID_WIDTH; x++) {
@@ -114,10 +123,24 @@ function draw() {
     );
   }
 
-  requestAnimationFrame(draw);
+  saveStructure();
+
+  requestAnimationFrame(loop);
 }
 
-draw();
+loop();
+
+// update local storage
+function saveStructure() {
+    // save to local storage for playtesting
+    const trimmed = trimStructure(structure);
+
+    const formatted = "[\n" +
+        trimmed.map(col => "  " + JSON.stringify(col)).join(",\n") +
+        "\n]";
+    localStorage.setItem("playtestStructure", formatted);
+    console.log(localStorage); // weird ass bug, breaks without the console.log
+}
 
 // clear
 document.getElementById("clearBtn").addEventListener("click", () => {

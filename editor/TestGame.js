@@ -1,15 +1,11 @@
 // main game file
 
-import { Player } from './entities/Player.js';
-import { ObstacleManager } from './ObstacleManager.js';
-import { QuizManager } from './QuizManager.js';
-import { Renderer } from './Renderer.js';
-import { InputHandler } from './InputHandler.js';
-import { ParticleManager } from './ParticleManager.js';
-import { QUESTION_BANK } from './QuestionBank.js';
-import { TUTORIAL_STRUCTURES } from './Structures.js';
-import { EASY_STRUCTURES } from './Structures.js';
-import { HARD_STRUCTURES } from './Structures.js';
+import { Player } from '../src/entities/Player.js';
+import { ObstacleManager } from '../src/ObstacleManager.js';
+import { Renderer } from '../src/Renderer.js';
+import { InputHandler } from '../src/InputHandler.js';
+import { ParticleManager } from '../src/ParticleManager.js';
+import { TUTORIAL_STRUCTURES } from '../src/Structures.js';
 
 // states
 const GameState = Object.freeze({
@@ -49,7 +45,7 @@ export class Game {
 
     this.setupUI();
 
-    this.questionSet = QUESTION_BANK;
+    this.questionSet = [];
     this.prevState = GameState.RUNNING;
 
     this.reset();
@@ -60,35 +56,7 @@ export class Game {
   }
 
   setupUI() {
-    // DOM references
-    this.pauseOverlay = document.getElementById("pauseOverlay");
-    this.resumeButton = document.getElementById("resumeButton");
-    this.quitButton = document.getElementById("quitButton");
-
-    this.winOverlay = document.getElementById("winOverlay");
-    this.performanceText = document.getElementById("performanceText");
-    this.winMenuButton = document.getElementById("winMenuButton");
-
-    // win menu button
-    this.winMenuButton.addEventListener("click", () => {
-      this.state = GameState.MENU;   // switch to menu
-      this.toggleMenu(true, "main-menu");
-      this.toggleGame(false);
-      this.winOverlay.classList.add("hidden");
-    });
-
-    // Resume button
-    this.resumeButton.addEventListener("click", () => {
-      this.unpause();
-    });
-
-    // Quit button
-    this.quitButton.addEventListener("click", () => {
-      this.state = GameState.MENU;   // switch to menu
-      this.toggleMenu(true, "main-menu");
-      this.toggleGame(false);
-      this.pauseOverlay.classList.add("hidden");
-    });
+    return;
   }
 
   reset() {
@@ -101,7 +69,8 @@ export class Game {
     
     this.loadStructures();
 
-    this.quizManager = new QuizManager(this.obstacleManager, this.questionSet);
+    this.firstIteration = true; // wont say ggs on first loop
+
     this.particleManager = new ParticleManager();
     this.completedQuestions = 0;
     this.totalQuestions = this.questionSet.length;
@@ -126,48 +95,19 @@ export class Game {
 
   loadStructures() {
 
-    if (CONFIG.tutorial) {
-      this.obstacleManager = new ObstacleManager(TUTORIAL_STRUCTURES);
-      return;
-    }
-
-    let STRUCTURES = [];
-
-    switch(CONFIG.difficulty) {
-      case 0:
-        STRUCTURES = [
-          ...EASY_STRUCTURES
-        ];
-        break;
-      case 1:
-        STRUCTURES = [
-          ...EASY_STRUCTURES,
-          ...HARD_STRUCTURES  // 1x weight
-        ];
-        break;
-      case 2:
-        STRUCTURES = [
-          ...HARD_STRUCTURES
-        ];
-        break;
-      default:
-        console.warn("invalid difficulty selected");
-    }
-    console.log(STRUCTURES);
-
+    const STRUCTURES = [
+        localStorage.getItem("playtestStructure")
+        ? JSON.parse(localStorage.getItem("playtestStructure"))
+        : TUTORIAL_STRUCTURES[0]
+    ];
     this.obstacleManager = new ObstacleManager(STRUCTURES);
+    console.log(STRUCTURES)
   }
 
   loop(timestamp) {
     const deltaTime = timestamp - this.lastTime;
     this.lastTime = timestamp;
 
-    // switch (this.state) {
-    //   case GameState.QUIZ:
-    //   case GameState.RUNNING:
-    //     this.update(deltaTime);
-    //     break;
-    // }
     this.update(deltaTime);
     this.draw(deltaTime);
     this.input.update(); // update input state at end of frame so justPressed works properly
@@ -176,47 +116,24 @@ export class Game {
 
   // update the main gameplaying state
   update(deltaTime) {
-
-    if (this.input.isKeyJustPressed("p")) {
-      if (this.state === GameState.PAUSED) {
-        this.unpause();
-        return;
-      }
-    }
-
-    if (this.state === GameState.PAUSED) return;
-    if (this.state === GameState.WIN) return;
-
-    this.updateCSS();
-
-    if (this.input.isKeyPressed("m")) {
-      this.state = GameState.MENU;
-      // window.location.href = 'test.html'
-    }
-
+    // console.log(this.obstacleManager.structures);
 
     switch (this.state) {
       case GameState.MENU:
-        this.toggleMenu(true, "main-menu");
-        this.toggleGame(false);
         return;
-      case GameState.QUIZ:
       case GameState.RUNNING:
         if (this.input.isKeyJustPressed("p")) this.pause();
         break;
       case GameState.GAME_OVER:
         if (this.particleManager.particles.length == 0) {
-          this.score -= 10; // apply penalty for dying
-          if (CONFIG.respawn) this.softReset();
-          else this.reset();
+        //   if (CONFIG.respawn) this.softReset();
+        //   else this.reset();
+            this.reset();
         }
         return;
       default:
         return;
     }
-
-    this.toggleMenu(false);
-    this.toggleGame(true);
 
     // handle input
     if (this.input.isKeyPressed(" ") || this.input.isKeyPressed("ArrowUp") || this.input.isMousePressed()) {
@@ -235,21 +152,14 @@ export class Game {
 
     // update based on state
     if (this.state == GameState.RUNNING) {
-      // spawn new structures as needed
-      if (this.obstacleManager.spawnsSinceLastQuiz >= 2) {
-        this.state = GameState.QUIZ;
-        this.obstacleManager.spawnsSinceLastQuiz = 0;
-        this.quizManager.init();
-      } else {
+        if (this.obstacleManager.obstacles.length == 0 && !this.firstIteration) {
+            alert("good job u beat this level :D");
+            this.reset();
+        }
         this.obstacleManager.spawnNewStructure();
-      }
-
-    } else if (this.state == GameState.QUIZ) {
-      // quiz logic
-      this.quizManager.update();
-      if (!this.quizManager.active) this.state = GameState.RUNNING;
     }
 
+    this.firstIteration = false;
   }
 
   // render everything, only canvas stuff should be here; menus handeled separately
@@ -258,7 +168,6 @@ export class Game {
 
     switch (this.state) {
       case GameState.RUNNING:
-      case GameState.QUIZ:
       case GameState.PAUSED:
         this.renderer.drawPlayer(this.player, deltaTime);
         this.handleGroundParticles();
@@ -275,7 +184,7 @@ export class Game {
 
     this.obstacleManager.obstacles.forEach(obstacle => this.renderer.drawObstacle(obstacle));
     this.renderer.drawScore(Math.floor(this.score));
-    this.renderer.drawQuizProgress(this.completedQuestions, this.totalQuestions);
+    // this.renderer.drawQuizProgress(this.completedQuestions, this.totalQuestions);
     this.particleManager.update(deltaTime); // particles are purely visual so update in draw
     this.renderer.drawParticles(this.particleManager.particles);
   }
@@ -296,6 +205,7 @@ export class Game {
     if (this.state == GameState.GAME_OVER) return;
     this.particleManager.spawnParticles(this.player.x, this.player.y, 80);
     this.state = GameState.GAME_OVER;
+    this.score -= 10; // apply penalty for dying
   }
 
   // show/hide menus
@@ -313,57 +223,9 @@ export class Game {
     }
   }
 
-  toggleGame(show) {
-    document.querySelectorAll(`.gameElement`).forEach(el => {
-        el.classList.toggle("hidden", !show);
-    });
-    // show/hide pause overlay
-    if (this.state == GameState.PAUSED) {
-      this.pauseOverlay.classList.remove("hidden");
-    } else {
-      this.pauseOverlay.classList.add("hidden");
-    }
-
-    // show/hide win overlay
-    if (this.state == GameState.WIN) {
-      this.winOverlay.classList.remove("hidden");
-    } else {
-      this.winOverlay.classList.add("hidden");
-    }
-  }
-
-  pause() {
-    if (this.state !== GameState.RUNNING && this.state !== GameState.QUIZ) return;
-
-    this.prevState = this.state;
-    this.state = GameState.PAUSED;
-    this.score -= 10; // apply penalty immediately
-    this.pauseOverlay.classList.remove("hidden");
-
-  }
-
-  unpause() {
-    this.state = this.prevState;
-    this.pauseOverlay.classList.add("hidden");
-  }
-
-  // make it only call on state change to be slightly more efficient maybe
-  updateCSS() {
-    switch (this.state) {
-      case GameState.MENU:
-        document.getElementById("gameStyle").disabled = true;
-        document.getElementById("menuStyle").disabled = false;
-        break;
-      default:
-        document.getElementById("gameStyle").disabled = false;
-        document.getElementById("menuStyle").disabled = true;
-    }
-  }
-
   enterGoal() {
     this.goalCooldown = this.maxGoalCooldown;
     this.score += 15;
-    this.quizManager.markCurrentQuestionCompleted(); // CURRENT QUESTION DONE
     this.particleManager.spawnParticles(
       this.player.x,
       this.player.y,
