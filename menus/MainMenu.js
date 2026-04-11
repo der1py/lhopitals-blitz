@@ -8,7 +8,7 @@ class MainMenu extends HTMLElement {
 <header>
 <div class="header-left">
 <svg class="logo-icon" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"></path></svg>
-<h1 class="" style="">L'HÔPITAL'S BLITZ</h1>
+<h1 class="" style="">BLITZ4U</h1>
 </div>
 <div class="header-right">
 <div class="rank-info">

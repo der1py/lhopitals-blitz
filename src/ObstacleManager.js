@@ -25,11 +25,34 @@ export class ObstacleManager {
         this.obstacles = this.obstacles.filter(ob => ob.active);
     }
 
+    clear() { 
+        this.obstacles = [];
+        this.buffer = [];
+        this.lastStructure = this.activeStructure; // save to reload on respawn
+        this.activeStructure = null;
+    }
+
     spawnNewStructure() {
         // spawn new structure if buffer is empty
         if (this.buffer.length < 1 && this.obstacles.length < 1) {
             // this.spawnStructure(EASY_STRUCTURES[Math.floor(Math.random() * EASY_STRUCTURES.length)]);
             
+            // load last structure if exists
+            if (this.lastStructure) {
+                this.spawnStructure(this.lastStructure);
+                this.activeStructure = this.lastStructure;
+                this.lastStructure = null; // clear last structure so it only reloads once
+                return;
+            }
+
+            // mark current structure as completed AFTER its fully done so it wont break on respawn
+            if (this.activeStructure) { 
+                this.completedStructures.push(this.activeStructure); 
+                // increment counter here so quiz spawn doesnt affect it
+                this.spawnsSinceLastQuiz++;
+                this.totalSpawns++;
+            }
+
             // reset if all structures used
             if (this.completedStructures.length === this.structures.length) {
                 this.completedStructures = [];
@@ -43,11 +66,8 @@ export class ObstacleManager {
             // pick random
             const structure = available[Math.floor(Math.random() * available.length)];
             this.spawnStructure(structure);
-            this.completedStructures.push(structure);
+            this.activeStructure = structure; // init here
 
-            // increment counter here so quiz spawn doesnt affect it
-            this.spawnsSinceLastQuiz++;
-            this.totalSpawns++;
             // console.log(this.spawnsSinceLastQuiz);
             // console.log(this.totalSpawns);
         }

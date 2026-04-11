@@ -1,0 +1,17 @@
+<canvas id="gameCanvas"></canvas>
+
+<script type="module">
+  import { Game } from "../src/Game.js";
+
+  // optional override BEFORE construction
+  import { CONFIG } from "../src/Game.js";
+
+  CONFIG.tutorial = false;
+  CONFIG.difficulty = 0;
+
+  const game = new Game();
+
+  // inject custom level (if you add hook below)
+//   game.forceSingleLevel(EASY_STRUCTURES[0]);
+  game.reset();
+</script>

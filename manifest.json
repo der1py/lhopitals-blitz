@@ -5,7 +5,7 @@
   "description": "Side-scrolling runner to get good at calculus",
   "action": {
     "default_popup": "index.html",
-    "default_title": "L'Hôpital's Blitz"
+    "default_title": "BLITZ4U"
   },
   "icons": {
     "128": "icon.png"

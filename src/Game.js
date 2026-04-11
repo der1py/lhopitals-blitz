@@ -34,7 +34,8 @@ export const CONFIG = {
   canvasHeight: 12 * BLOCK_SIZE,
   scrollSpeed: 240, // used for obsracle movement and quiz text speed; in pixels per second
   difficulty: 1, // 0 is ez, 1 is normal, 2 is hard
-  tutorial: false
+  tutorial: false,
+  respawn: true
 };
 
 export class Game {
@@ -113,7 +114,14 @@ export class Game {
     this.maxGoalCooldown = 2000; // 2 seconds
 
     // this.obstacleManager.spawnStructure(TUTORIAL_STRUCTURES[1]);
-    this.obstacleManager.spawnStructure(EASY_STRUCTURES[0]);  
+    // this.obstacleManager.spawnStructure(EASY_STRUCTURES[0]);  
+  }
+
+  // on death
+  softReset() {
+    this.player = new Player(3 * CONFIG.blockSize, 10 * CONFIG.blockSize);
+    this.obstacleManager.clear();
+    this.state = GameState.RUNNING;
   }
 
   loadStructures() {
@@ -198,7 +206,8 @@ export class Game {
         break;
       case GameState.GAME_OVER:
         if (this.particleManager.particles.length == 0) {
-          this.reset();
+          if (CONFIG.respawn) this.softReset();
+          else this.reset();
         }
         return;
       default:
@@ -353,6 +362,7 @@ export class Game {
   enterGoal() {
     this.goalCooldown = this.maxGoalCooldown;
     this.score += 15;
+    this.quizManager.markCurrentQuestionCompleted(); // CURRENT QUESTION DONE
     this.particleManager.spawnParticles(
       this.player.x,
       this.player.y,

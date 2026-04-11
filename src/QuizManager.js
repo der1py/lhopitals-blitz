@@ -8,6 +8,7 @@ const QuizState = Object.freeze({
 
 export class QuizManager {
     
+    // one instance is created, and then init is called to start each quiz when needed
     constructor(obstacleManager, questionBank) {
         this.questionBank = questionBank
         this.obstacleManager = obstacleManager;
@@ -16,11 +17,12 @@ export class QuizManager {
         this.available = [];
     }
 
-    // reset quiz stuff
+    // reset quiz stuff and start new quiz
     init() {
         this.active = true;
         this.state = QuizState.INTRO;
         this.q = this.nextQuestion();
+        this.currentQuestion = this.q; // redundant but explicit so its ok
         this.correctLane = Math.floor(Math.random() * 4);
         this.obstacleManager.spawnScrollingText(6, this.q.text, 0);
     }
@@ -68,8 +70,12 @@ export class QuizManager {
         }
 
         let q = this.available[Math.floor(Math.random() * this.available.length)]
-        this.completedQuestions.push(q);
+        this.currentQuestion = q; // yeah this might be a lil redundant but its fine for clarity
         return q;
+    }
+
+    markCurrentQuestionCompleted() {
+        this.completedQuestions.push(this.currentQuestion);
     }
 
 }
