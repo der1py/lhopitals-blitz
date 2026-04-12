@@ -1,5 +1,5 @@
 document.getElementById("testLevelBtn").addEventListener("click", () => {
-  window.open("playTest.html", "_blank");
+  window.open("playtest.html", "_blank");
 });
 
 const canvas = document.getElementById("editorCanvas");

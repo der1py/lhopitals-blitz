@@ -35,7 +35,8 @@ export const CONFIG = {
   scrollSpeed: 240, // used for obsracle movement and quiz text speed; in pixels per second
   difficulty: 1, // 0 is ez, 1 is normal, 2 is hard
   tutorial: false,
-  respawn: true
+  respawn: true,
+  pointsPerQuestion: 30,
 };
 
 export class Game {
@@ -109,6 +110,7 @@ export class Game {
     // Score & game state
     this.score = 0;
     this.state = GameState.RUNNING;
+    this.lastState = null;
 
     this.goalCooldown = 0; // time remaining (ms)
     this.maxGoalCooldown = 2000; // 2 seconds
@@ -122,6 +124,10 @@ export class Game {
     this.player = new Player(3 * CONFIG.blockSize, 10 * CONFIG.blockSize);
     this.obstacleManager.clear();
     this.state = GameState.RUNNING;
+    // if (this.lastState) this.state = this.lastState;
+    // if (this.lastState === GameState.QUIZ) {
+    //   this.obstacleManager.spawnsSinceLastQuiz = 2;
+    // }
   }
 
   loadStructures() {
@@ -206,7 +212,6 @@ export class Game {
         break;
       case GameState.GAME_OVER:
         if (this.particleManager.particles.length == 0) {
-          this.score -= 10; // apply penalty for dying
           if (CONFIG.respawn) this.softReset();
           else this.reset();
         }
@@ -295,7 +300,9 @@ export class Game {
   gameOver() {
     if (this.state == GameState.GAME_OVER) return;
     this.particleManager.spawnParticles(this.player.x, this.player.y, 80);
+    this.lastState = this.state;
     this.state = GameState.GAME_OVER;
+    this.score -= 10; // apply penalty for dying
   }
 
   // show/hide menus
@@ -362,7 +369,7 @@ export class Game {
 
   enterGoal() {
     this.goalCooldown = this.maxGoalCooldown;
-    this.score += 15;
+    this.score += CONFIG.pointsPerQuestion; // reward for completing question
     this.quizManager.markCurrentQuestionCompleted(); // CURRENT QUESTION DONE
     this.particleManager.spawnParticles(
       this.player.x,
@@ -375,7 +382,7 @@ export class Game {
 
     this.completedQuestions++;
     if (this.completedQuestions >= this.totalQuestions) {
-      const maxScore = this.totalQuestions * 15;
+      const maxScore = this.totalQuestions * CONFIG.pointsPerQuestion;
       const percent = Math.round((this.score / maxScore) * 100);
 
       this.performanceText.textContent = `Performance Rating: ${percent}%`;
