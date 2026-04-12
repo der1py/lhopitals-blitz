@@ -28,7 +28,7 @@ class MainMenu extends HTMLElement {
 <svg viewBox="0 0 24 24"><path d="M12 2C8.14 2 5 5.14 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26c1.81-1.27 3-3.36 3-5.74 0-3.86-3.14-7-7-7zm2.85 11.1l-.85.6V16h-4v-2.3l-.85-.6C7.8 12.16 7 10.63 7 9c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.63-.8 3.16-2.15 4.1zM9 19h6v1H9z"></path></svg>
 <span class="btn-label" style="">Tutorial</span>
 </button>
-<button class="btn-secondary" onclick="swapScreen('quiz')" style="">
+<button class="btn-secondary" id="quizMenuBtn" style="">
 <svg viewBox="0 0 24 24"><path d="M3 10h11v2H3zm0-2h11V6H3zm0 8h7v-2H3zm15.01-3.13l.71-.71c.39-.39 1.02-.39 1.41 0l.71.71c.39.39.39 1.02 0 1.41l-.71.71zm-.71.71l-5.3 5.3V21h2.12l5.3-5.3z"></path></svg>
 <span class="btn-label" style="">Quiz</span>
 </button>

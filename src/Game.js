@@ -7,6 +7,8 @@ import { Renderer } from './Renderer.js';
 import { InputHandler } from './InputHandler.js';
 import { ParticleManager } from './ParticleManager.js';
 import { QUESTION_BANK } from './QuestionBank.js';
+import { TRIG_ID_QUESTIONS } from './QuestionBank.js';
+import { SOLUBILITY_QUESTIONS } from './QuestionBank.js';
 import { TUTORIAL_STRUCTURES } from './Structures.js';
 import { EASY_STRUCTURES } from './Structures.js';
 import { HARD_STRUCTURES } from './Structures.js';
@@ -17,6 +19,8 @@ const GameState = Object.freeze({
   QUIZ: 'QUIZ',
   GAME_OVER: 'GAME_OVER',
   MENU: 'MENU',
+  QUIZ_MENU: 'QUIZ_MENU',
+  SETTINGS: 'SETTINGS',
   PAUSED: 'PAUSED',
   WIN: 'WIN'
 });
@@ -26,7 +30,7 @@ const GameMode = Object.freeze({
   ENDLESS: 'ENDLESS'
 });
 
-// the ones with todo dont actually do anything lol
+// edit config externally with setConfig method
 const BLOCK_SIZE = 30;
 export const CONFIG = {
   blockSize: BLOCK_SIZE,
@@ -37,6 +41,7 @@ export const CONFIG = {
   tutorial: false,
   respawn: true,
   pointsPerQuestion: 30,
+  quiz: 1 // 0 is tutorial, 1 is trig id, 2 is solubility, 3 is custom import
 };
 
 export class Game {
@@ -73,8 +78,6 @@ export class Game {
     // win menu button
     this.winMenuButton.addEventListener("click", () => {
       this.state = GameState.MENU;   // switch to menu
-      this.toggleMenu(true, "main-menu");
-      this.toggleGame(false);
       this.winOverlay.classList.add("hidden");
     });
 
@@ -86,13 +89,33 @@ export class Game {
     // Quit button
     this.quitButton.addEventListener("click", () => {
       this.state = GameState.MENU;   // switch to menu
-      this.toggleMenu(true, "main-menu");
-      this.toggleGame(false);
       this.pauseOverlay.classList.add("hidden");
     });
   }
 
   reset() {
+    // check if new questions selected
+    switch (CONFIG.quiz) {
+      case 0:
+        this.questionSet = QUESTION_BANK;
+        break;
+      case 1:
+        this.questionSet = TRIG_ID_QUESTIONS;
+        break;
+      case 2:
+        this.questionSet = SOLUBILITY_QUESTIONS;
+        break;
+      case 3:
+        this.questionSet = CUSTOM_QUESTIONS;
+        break;
+      default:
+        console.warn("Invalid quiz selected");
+        this.state = GameState.MENU;
+        alert("Invalid quiz selected, returning to menu");
+    }
+
+    if (CONFIG.tutorial) this.questionSet = QUESTION_BANK; // override if tutorial mode
+
     // Player setup
     this.player = new Player(3 * CONFIG.blockSize, 10 * CONFIG.blockSize);
 
@@ -110,7 +133,7 @@ export class Game {
     // Score & game state
     this.score = 0;
     this.state = GameState.RUNNING;
-    this.lastState = null;
+    this.stateBeforeDeath = null;
 
     this.goalCooldown = 0; // time remaining (ms)
     this.maxGoalCooldown = 2000; // 2 seconds
@@ -124,10 +147,10 @@ export class Game {
     this.player = new Player(3 * CONFIG.blockSize, 10 * CONFIG.blockSize);
     this.obstacleManager.clear();
     this.state = GameState.RUNNING;
-    // if (this.lastState) this.state = this.lastState;
-    // if (this.lastState === GameState.QUIZ) {
-    //   this.obstacleManager.spawnsSinceLastQuiz = 2;
-    // }
+    // if (this.stateBeforeDeath) this.state = this.stateBeforeDeath;
+    if (this.stateBeforeDeath === GameState.QUIZ) {
+      this.obstacleManager.spawnsSinceLastQuiz = 1; // make it apply only to quiz part 1 later otherwise u can die and skip an obstacle after scoring
+    }
   }
 
   loadStructures() {
@@ -195,14 +218,20 @@ export class Game {
 
     this.updateCSS();
 
+    // todo debug, remove 
     if (this.input.isKeyPressed("m")) {
-      this.state = GameState.MENU;
+      this.state = GameState.QUIZ_MENU;
       // window.location.href = 'test.html'
     }
 
-
     switch (this.state) {
+      case GameState.QUIZ_MENU:
+        this.toggleMenu(false);
+        this.toggleMenu(true, "quiz-menu");
+        this.toggleGame(false);
+        return;
       case GameState.MENU:
+        this.toggleMenu(false); // disable all other menus
         this.toggleMenu(true, "main-menu");
         this.toggleGame(false);
         return;
@@ -300,7 +329,7 @@ export class Game {
   gameOver() {
     if (this.state == GameState.GAME_OVER) return;
     this.particleManager.spawnParticles(this.player.x, this.player.y, 80);
-    this.lastState = this.state;
+    this.stateBeforeDeath = this.state;
     this.state = GameState.GAME_OVER;
     this.score -= 10; // apply penalty for dying
   }
@@ -361,9 +390,15 @@ export class Game {
         document.getElementById("gameStyle").disabled = true;
         document.getElementById("menuStyle").disabled = false;
         break;
+      case GameState.QUIZ_MENU:
+        document.getElementById("gameStyle").disabled = true;
+        document.getElementById("menuStyle").disabled = true;
+        document.getElementById("quizMenuStyle").disabled = false;
+        break;
       default:
         document.getElementById("gameStyle").disabled = false;
         document.getElementById("menuStyle").disabled = true;
+        document.getElementById("quizMenuStyle").disabled = true;
     }
   }
 
